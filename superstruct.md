@@ -1,8 +1,9 @@
 # Javascript 运行时接口验证工具 Superstruct
 
 ## 为什么需要运行时验证
-众所周知，JS是一门对类型转换容忍度极高的语言
+众所周知，JS是一门对隐式类型转换容忍度极高的语言
 一不注意就会写出意想不到的到吗，比如
+
 ```js
 function add(x, y){
   return (x + y)/2;
@@ -20,4 +21,77 @@ add(a,b)
 
 ## Superstruct 
 
-因此，我们需要一个工具来帮助我们验证运行时的接口
+因此，我们需要一个工具来帮助我们验证运行时的接口,Superstruct就是为了应对这种情况而产生的工具
+
+### 基本类型
+
+最简单的情况就是基本类型的验证
+
+```js
+import { string } from 'superstruct'
+
+const Struct = string()
+
+assert('a string', Struct) // passes
+assert(42, Struct) // throws!
+```
+
+这里assert将会抛出一个运行时错误
+
+###  组合
+
+可以将基本的类型进行组合，来构造更复杂的类型
+
+```js
+const User = object({
+  id: number(),
+  email: string(),
+  name: string(),
+})
+
+// passes
+assert(
+  {
+    id: 1,
+    email: 'jane@example.com',
+    name: 'Jane',
+  },
+  User
+)
+
+// throws! (id is invalid)
+assert(
+  {
+    id: '1',
+    email: 'jane@example.com',
+    name: 'Jane',
+  },
+  User
+)
+
+// also throws! (email is missing)
+assert(
+  {
+    id: 1,
+    name: 'Jane',
+  },
+  User
+)
+```
+### 可选
+
+可以通过optional函数来指定某个属价可选
+```js
+import { optional } from "superstruct"
+
+const User = object({
+  id: number(),
+  name: string(),
+  email: optional(string()), //可选属性
+})
+```
+
+### 自定义验证
+
+
+### 默认值

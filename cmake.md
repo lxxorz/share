@@ -21,9 +21,10 @@ g++ main.o hello.o -o a.out
 ### 动态链接库
 
 动态链接库的是为了节省程序内存占用，多个程序共享同一个动态链接库，而不是每个程序都单独的加载一个动态链接库。
-
-
+<!--TODO:动态链接库的概念 -->
 ###  静态链接库
+
+<!--TODO:静态链接库的概念 -->
 
 ## MakeFile是什么?
 
@@ -44,3 +45,4 @@ sudo apt install cmake
 ```
 pip install  cmake
 ```
+

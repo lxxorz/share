@@ -1,5 +1,11 @@
 # Javascript 运行时接口验证工具 Superstruct
 
+## 设计原则
+
+* 可组合的
+* 可自定义
+* 有用的运行时错误
+* 语法自然
 ## 为什么需要运行时验证
 众所周知，JS是一门对隐式类型转换容忍度极高的语言
 一不注意就会写出意想不到的到吗，比如
@@ -80,10 +86,9 @@ assert(
 ```
 ### 可选
 
-可以通过optional函数来指定某个属价可选
+可以通过optional函数来指定某个属性可选
 ```js
 import { optional } from "superstruct"
-
 const User = object({
   id: number(),
   name: string(),
@@ -93,5 +98,5 @@ const User = object({
 
 ### 自定义验证
 
-
+<!-- TODO: 补充文档 -->
 ### 默认值

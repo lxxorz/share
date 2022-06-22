@@ -19,6 +19,7 @@ info: |
 # persist drawings in exports and build
 drawings:
   persist: false
+monaco: true
 ---
 
 # Superstruct
@@ -41,7 +42,7 @@ image: https://source.unsplash.com/collection/94734566/1920x1080
 
 ---
 
-## 为什么需要运行时验证
+### 为什么需要运行时验证
 众所周知，JS是一门对隐式类型转换容忍度极高的语言
 一不注意就会写出意想不到的代码，比如
 
@@ -63,7 +64,7 @@ add(a,b)
 
 ---
 
-## Superstruct
+### Superstruct
 
 因此，我们需要一个工具来帮助我们验证运行时的接口,**Superstruct**就是为了应对这种情况而产生的工具
 
@@ -88,7 +89,7 @@ assert(42, Struct) // throws!
 
 ---
 
-## 其他类型
+### 其他类型
 
 除了基本类型意外还有其他高级类型供用户使用
 
@@ -103,7 +104,7 @@ assert(42, Struct) // throws!
 
 ---
 
-## 错误描述
+### 错误描述
 ```sh
 file:///home/bjorn/test/fuccc/node_modules/superstruct/lib/index.es.js:385
     const error = new StructError(tuple[0], function* () {
@@ -255,7 +256,7 @@ const MyNumber = coerce(
 
 运行结果
 
-```js
+```js {monaco}
 import { create } from 'superstruct'
 
 const data = '3.14'
@@ -317,7 +318,7 @@ export function is<T, S>(
 ---
 
 可以使用TS定义的类型来确保正确的属性类型
-```ts {monaco}
+```ts 
 import { Describe } from 'superstruct'
 type User = {
   id: number

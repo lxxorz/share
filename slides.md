@@ -26,6 +26,9 @@ drawings:
 Javascript 运行时接口验证工具 
 
 ---
+layout: image-right
+image: https://source.unsplash.com/collection/94734566/1920x1080
+---
 
 ## 设计原则
 
@@ -85,27 +88,47 @@ assert(42, Struct) // throws!
 
 ---
 
-实现
+## 其他类型
 
-```ts
-export function is<T, S>(value: unknown, struct: Struct<T, S>): value is T {
-  const result = validate(value, struct)
-  return !result[0]
-}
+除了基本类型意外还有其他高级类型供用户使用
 
-validate(
-  value: unknown,
-  options: {
-    coerce?: boolean
-  } = {}
-): [StructError, undefined] | [undefined, T] {
-  return validate(value, this, options)
-}
-```
+* any
+* bigint
+* date
+* func
+* set
+* map
+* optional
+* ...
+
 ---
 
+## 错误描述
 ```sh
-error: 
+file:///home/bjorn/test/fuccc/node_modules/superstruct/lib/index.es.js:385
+    const error = new StructError(tuple[0], function* () {
+                  ^
+
+StructError: At path: test -- Expected a number, but received: "sdfasfd"
+    at validate (file:///home/bjorn/test/fuccc/node_modules/superstruct/lib/index.es.js:385:19)
+    at create (file:///home/bjorn/test/fuccc/node_modules/superstruct/lib/index.es.js:337:18)
+    at file:///home/bjorn/test/fuccc/examples/defaulted.mjs:19:16
+    at ModuleJob.run (node:internal/modules/esm/module_job:198:25)
+    at async Promise.all (index 0)
+    at async ESMLoader.import (node:internal/modules/esm/loader:385:24)
+    at async loadESM (node:internal/process/esm_loader:88:5)
+    at async handleMainPromise (node:internal/modules/run_main:61:12) {
+  value: 'sdfasfd',
+  key: 'test',
+  type: 'number',
+  refinement: undefined,
+  path: [ 'test' ],
+  branch: [
+    { name: 'Jane', email: 'jane@example.com', test: 'sdfasfd' },
+    'sdfasfd'
+  ],
+  failures: [Function (anonymous)]
+}
 ```
 
 ---
@@ -117,12 +140,15 @@ layout: two-cols
 }
 </style>
 
-```js {all|1-5|8-15|14|all}
+将基本类型组合，来构造更复杂的类型
+
+```js {1-5|8-15}
 const User = object({
   id: tt(),
   email: string(),
   name: string(),
 })
+
 
 // passes
 assert(
@@ -134,11 +160,11 @@ assert(
   User
 )
 ```
-可以将基本的类型进行组合，来构造更复杂的类型
 
 ::right::
 
-```js
+将会抛出一个运行时错误
+```js {hidden|all}
 // also throws! (email is missing)
 assert(
   {
@@ -151,7 +177,7 @@ assert(
 
 ---
 
-### 可选
+### 可选类型
 
 可以通过optional函数来指定某个属性可选
 
@@ -168,9 +194,9 @@ const User = object({
 
 ### 自定义验证
 
-只进行类型验证是远远不够的， superstruct还可以添加自定义的值验证
+除了object,superstruct还可以使用`define<T>(name: string, validator: Validator): Struct<T, null>`自定义类型
 
-```js {monoca}
+```js 
 import { define } from 'superstruct'
 import isEmail from 'is-email'
 
@@ -178,7 +204,12 @@ const email = () => define('email', (value) => isEmail(value))
 ```
 
 ---
+# 修改输入的数据
 
+有时候，为了让数据通过验证，我们需要对数据的数据做处理（类型转换，计算，trim...)
+
+
+---
 ### 默认值
 
 很多时候，我们需要为生成的对象提供默认值，superstruct提供了 `defaulted`函数来完成这一功能
@@ -238,7 +269,9 @@ const output = create(data, MyNumber)
 
 配合typescript 使用，需要激活[strictNullChecks](https://www.typescriptlang.org/tsconfig#strictNullChecks)获取设置"strict"选项,以便支持optional方法的使用
 
-superstruct是类型安全的
+---
+
+这里`is`可以充当类型保护,它会让TS自动推断此处的`data`是`User`类型,和`assert`不同的是，它会返回一个布尔值,而非直接抛出一个错误
 
 ```js
 const User = object({
@@ -251,7 +284,6 @@ if (is(data, User)) {
   // TS会自动推断出块内的代码是User类型, TS已经知道data通过了类型校验
 }
 ```
-这里`is`可以充当类型保护,它会让TS自动推断此处的data是User类型,和`assert`不同的是，它会返回一个布尔值,而非直接抛出一个错误
 
 
 ---
@@ -285,14 +317,15 @@ export function is<T, S>(
 ---
 
 可以使用TS定义的类型来确保正确的属性类型
-```ts
+```ts {monaco}
+import { Describe } from 'superstruct'
 type User = {
   id: number
   name: string
 }
 
 const User: Describe<User> = object({
-  id: string(), // 错误，应该为 number
+  id: string(), // 不会通过类型检查，应该为`number`
   name: string(),
 })
 ```
@@ -300,6 +333,7 @@ const User: Describe<User> = object({
 ---
 
 TS也可以从superstruct定义的对象构造类型
+
 ```ts {all|3-7|all}
 import { Infer } from 'superstruct'
 

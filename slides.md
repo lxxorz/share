@@ -81,8 +81,27 @@ assert('a string', Struct) // passes
 assert(42, Struct) // throws!
 ```
 
-这里`assert`将会抛出一个运行时错误
+这里`assert`充当的是一个断言函数，如果和Struct不匹配，那么将会抛出一个StructError的运行时错误
 
+---
+
+实现
+
+```ts
+export function is<T, S>(value: unknown, struct: Struct<T, S>): value is T {
+  const result = validate(value, struct)
+  return !result[0]
+}
+
+validate(
+  value: unknown,
+  options: {
+    coerce?: boolean
+  } = {}
+): [StructError, undefined] | [undefined, T] {
+  return validate(value, this, options)
+}
+```
 ---
 
 ```sh
@@ -93,9 +112,9 @@ error:
 layout: two-cols
 ---
 <style>
-  .shiki-container{
-    margin-right: 20px;
-  }
+.shiki-container {
+  margin-right: 20px;
+}
 </style>
 
 ```js {all|1-5|8-15|14|all}
@@ -148,12 +167,147 @@ const User = object({
 ---
 
 ### 自定义验证
-可以自定义验证
+
+只进行类型验证是远远不够的， superstruct还可以添加自定义的值验证
+
+```js {monoca}
+import { define } from 'superstruct'
+import isEmail from 'is-email'
+
+const email = () => define('email', (value) => isEmail(value))
+```
+
 ---
 
 ### 默认值
 
+很多时候，我们需要为生成的对象提供默认值，superstruct提供了 `defaulted`函数来完成这一功能
+
+```js {all|6|6,16}
+import { defaulted, create } from 'superstruct'
+
+let i = 0
+
+const User = object({
+  id: defaulted(number(), () => i++),
+  email: string(),
+  name: string(),
+})
+
+const data = {
+  name: 'Jane',
+  email: 'jane@example.com',
+}
+
+const user = create(data, User)
+```
+
+---
+layout: two-cols
+---
+
+除了提供默认值，还可以转换输入数据
+
+```js
+import {
+  coerce,
+  number,
+  string,
+  create
+} from 'superstruct'
+
+const MyNumber = coerce(
+  number(), string(), (value) => parseFloat(value)
+)
+```
+::right::
+
+运行结果
+
+```js
+import { create } from 'superstruct'
+
+const data = '3.14'
+const output = create(data, MyNumber)
+// 3.14
+```
 
 ---
 
 ### Typescript支持
+
+配合typescript 使用，需要激活[strictNullChecks](https://www.typescriptlang.org/tsconfig#strictNullChecks)获取设置"strict"选项,以便支持optional方法的使用
+
+superstruct是类型安全的
+
+```js
+const User = object({
+  id: number(),
+  email: email(),
+  name: string(),
+})
+
+if (is(data, User)) {
+  // TS会自动推断出块内的代码是User类型, TS已经知道data通过了类型校验
+}
+```
+这里`is`可以充当类型保护,它会让TS自动推断此处的data是User类型,和`assert`不同的是，它会返回一个布尔值,而非直接抛出一个错误
+
+
+---
+layout: two-cols
+---
+`assert` Function
+```ts {all|8}
+export function assert<T, S>(
+  value: unknown,
+  struct: Struct<T, S>
+): asserts value is T {
+  const result = validate(value, struct)
+
+  if (result[0]) {
+    throw result[0]
+  }
+}
+```
+::right::
+
+`is` Function
+```ts  {all|5}
+export function is<T, S>(
+  value: unknown, struct: Struct<T, S>
+): value is T {
+  const result = validate(value, struct)
+  return !result[0]
+}
+
+```
+---
+
+可以使用TS定义的类型来确保正确的属性类型
+```ts
+type User = {
+  id: number
+  name: string
+}
+
+const User: Describe<User> = object({
+  id: string(), // 错误，应该为 number
+  name: string(),
+})
+```
+
+---
+
+TS也可以从superstruct定义的对象构造类型
+```ts {all|3-7|all}
+import { Infer } from 'superstruct'
+
+const User = object({
+  id: number(),
+  email: email(),
+  name: string(),
+})
+
+type User = Infer<typeof User>
+```

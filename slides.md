@@ -89,6 +89,33 @@ assert(42, Struct) // throws!
 
 ---
 
+### 错误描述
+
+```sh
+file:///home/bjorn/test/fuccc/node_modules/superstruct/lib/index.es.js:385
+    const error = new StructError(tuple[0], function* () {
+
+StructError: Expected a string, but received: 42
+    at validate (file:///home/bjorn/test/fuccc/node_modules/superstruct/lib/index.es.js:385:19)
+    at assert (file:///home/bjorn/test/fuccc/node_modules/superstruct/lib/index.es.js:326:18)
+    at file:///home/bjorn/test/fuccc/examples/assert.mjs:6:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:198:25)
+    at async Promise.all (index 0)
+    at async ESMLoader.import (node:internal/modules/esm/loader:385:24)
+    at async loadESM (node:internal/process/esm_loader:88:5)
+    at async handleMainPromise (node:internal/modules/run_main:61:12) {
+  value: 42,
+  key: undefined,
+  type: 'string',
+  refinement: undefined,
+  path: [],
+  branch: [ 42 ],
+  failures: [Function (anonymous)]
+}
+```
+
+---
+
 ### 其他类型
 
 除了基本类型意外还有其他高级类型供用户使用
@@ -103,38 +130,9 @@ assert(42, Struct) // throws!
 * ...
 
 ---
-
-### 错误描述
-```sh
-file:///home/bjorn/test/fuccc/node_modules/superstruct/lib/index.es.js:385
-    const error = new StructError(tuple[0], function* () {
-                  ^
-
-StructError: At path: test -- Expected a number, but received: "sdfasfd"
-    at validate (file:///home/bjorn/test/fuccc/node_modules/superstruct/lib/index.es.js:385:19)
-    at create (file:///home/bjorn/test/fuccc/node_modules/superstruct/lib/index.es.js:337:18)
-    at file:///home/bjorn/test/fuccc/examples/defaulted.mjs:19:16
-    at ModuleJob.run (node:internal/modules/esm/module_job:198:25)
-    at async Promise.all (index 0)
-    at async ESMLoader.import (node:internal/modules/esm/loader:385:24)
-    at async loadESM (node:internal/process/esm_loader:88:5)
-    at async handleMainPromise (node:internal/modules/run_main:61:12) {
-  value: 'sdfasfd',
-  key: 'test',
-  type: 'number',
-  refinement: undefined,
-  path: [ 'test' ],
-  branch: [
-    { name: 'Jane', email: 'jane@example.com', test: 'sdfasfd' },
-    'sdfasfd'
-  ],
-  failures: [Function (anonymous)]
-}
-```
-
----
 layout: two-cols
 ---
+
 <style>
 .shiki-container {
   margin-right: 20px;
@@ -193,11 +191,11 @@ const User = object({
 
 ---
 
-### 自定义验证
+### `define`
 
-除了object,superstruct还可以使用`define<T>(name: string, validator: Validator): Struct<T, null>`自定义类型
+除了object,superstruct还可以使用`define<T>(name: string, validator: Validator): Struct<T, null>`进行更细粒度的验证
 
-```js 
+```js
 import { define } from 'superstruct'
 import isEmail from 'is-email'
 
@@ -205,15 +203,27 @@ const email = () => define('email', (value) => isEmail(value))
 ```
 
 ---
-# 修改输入的数据
+### `refine`
+
+也可以用现有的类型进行进一步的验证
+
+```js
+import { number, refine } from 'superstruct'
+
+const Positive = refine(number(), 'positive', (value) => value >= 0)
+```
+
+---
+### 修改输入的数据
 
 有时候，为了让数据通过验证，我们需要对数据的数据做处理（类型转换，计算，trim...)
 
 
 ---
+
 ### 默认值
 
-很多时候，我们需要为生成的对象提供默认值，superstruct提供了 `defaulted`函数来完成这一功能
+superstruct提供了 `defaulted`函数来完成这一功能
 
 ```js {all|6|6,16}
 import { defaulted, create } from 'superstruct'
@@ -249,14 +259,16 @@ import {
 } from 'superstruct'
 
 const MyNumber = coerce(
-  number(), string(), (value) => parseFloat(value)
+  number(),
+  string(),
+  (value) => parseFloat(value)
 )
 ```
 ::right::
 
 运行结果
 
-```js {monaco}
+```js
 import { create } from 'superstruct'
 
 const data = '3.14'
@@ -290,7 +302,9 @@ if (is(data, User)) {
 ---
 layout: two-cols
 ---
+
 `assert` Function
+
 ```ts {all|8}
 export function assert<T, S>(
   value: unknown,

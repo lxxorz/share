@@ -11,5 +11,8 @@
     "@slidev/theme-default": "*",
     "@slidev/theme-seriph": "*",
     "superstruct": "^0.16.0"
+  },
+  "devDependencies": {
+    "playwright-chromium": "^1.22.2"
   }
 }

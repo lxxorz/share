@@ -2,9 +2,9 @@
   "name": "slides",
   "private": true,
   "scripts": {
-    "build": "slidev build",
-    "dev": "slidev --open",
-    "export": "slidev export"
+    "build": "slidev build superstruct.md",
+    "dev": "slidev --open superstruct.md",
+    "export": "slidev export superstruct.md"
   },
   "dependencies": {
     "@slidev/cli": "^0.33.0",

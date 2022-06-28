@@ -204,6 +204,7 @@ const email = () => define('email', (value) => isEmail(value))
 ```
 
 ---
+
 ### `refine`
 
 也可以用现有的类型进行进一步的验证
@@ -215,6 +216,7 @@ const Positive = refine(number(), 'positive', (value) => value >= 0)
 ```
 
 ---
+
 ### 修改输入的数据
 
 有时候，为了让数据通过验证，我们需要对数据的数据做处理（类型转换，计算，trim...)

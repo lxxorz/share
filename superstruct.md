@@ -364,3 +364,10 @@ const User = object({
 
 type User = Infer<typeof User>
 ```
+
+
+---
+
+### reference
+
+https://docs.superstructjs.org/

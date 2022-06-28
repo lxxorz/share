@@ -2,9 +2,9 @@
   "name": "slides",
   "private": true,
   "scripts": {
-    "build": "slidev build superstruct.md",
-    "dev": "slidev --open superstruct.md",
-    "export": "slidev export superstruct.md"
+    "build": "slidev build superstruct",
+    "dev": "slidev --open typescript泛型编程.md",
+    "export": "slidev export typescript泛型编程.md"
   },
   "dependencies": {
     "@slidev/cli": "^0.33.0",

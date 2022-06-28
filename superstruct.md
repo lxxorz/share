@@ -188,6 +188,7 @@ const User = object({
   email: optional(string()), //可选属性
 })
 ```
+类比TS的interface
 
 ---
 

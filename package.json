@@ -2,7 +2,7 @@
   "name": "slides",
   "private": true,
   "scripts": {
-    "build": "slidev build superstruct",
+    "build": "slidev build superstruct.md",
     "dev": "slidev --open typescript泛型编程.md",
     "export": "slidev export typescript泛型编程.md"
   },

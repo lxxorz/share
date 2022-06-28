@@ -284,7 +284,8 @@ const output = create(data, MyNumber)
 
 ---
 
-这里`is`可以充当类型保护,它会让TS自动推断此处的`data`是`User`类型,和`assert`不同的是，它会返回一个布尔值,而非直接抛出一个错误
+这里`is`可以充当[类型保护](https://jkchao.github.io/typescript-book-chinese/typings/typeGuard.html),它会让TS自动推断此处的`data`是`User`类型,和`assert`不同的是，它会返回一个布尔值,而非直接抛出一个错误
+
 
 ```js
 const User = object({

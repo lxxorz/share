@@ -365,7 +365,6 @@ const User = object({
 type User = Infer<typeof User>
 ```
 
-
 ---
 
 ### reference

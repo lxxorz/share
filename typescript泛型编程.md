@@ -19,6 +19,8 @@ info: |
 # persist drawings in exports and build
 drawings:
   persist: false
+
+monaco: true
 ---
 
 <div class="text-base-3xl inline-flex justify-center items-center">
@@ -203,6 +205,12 @@ type PersonVisitorResponse = ErrorHandler & Visitor
 
 ---
 
+### 元组类型
+
+
+
+
+---
 
 ### 递归
 
@@ -273,7 +281,11 @@ type FeatureFlags = {
 };
 
 type FeatureOptions = OptionsFlags<FeatureFlags>;
+
 ```
+---
+
+![]()
 
 ---
 

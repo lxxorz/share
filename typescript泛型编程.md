@@ -47,7 +47,7 @@ function add(x, y) {
   if(typeof x === 'number' && typeof y === 'number') {
     return x + y;
   }
-  throw error;
+  throw new Error("...");
 }
 
 ```
@@ -79,12 +79,15 @@ add('1', 1);
 ```
 ---
 
-| 类型验证   | 验证时间 | 优点                                                               | 缺点           |
+<!-- | 类型验证   | 验证时间 | 优点                                                               | 缺点           |
 |------------|---------|------------------------------------------------------------------|---------------|
 | js         | 无       | 项目规模小时候配合灵活，开发速度块                                  | 维护困难       |
 | ts         | 编译时   | 编译时验证，需要用户书写各种类型,配合编辑器在开发时就能避免一些错误 | 无             |
-| 第三方工具 | 运行时   | 对于排查错误(~~甩锅~~)，项目代码健壮性有作用                        | 引入额外的依赖 |
-
+| 第三方工具 | 运行时   | 对于排查错误(~~甩锅~~)，项目代码健壮性有作用                        | 引入额外的依赖 | -->
+* TypeScript
+  在编译时验证类型
+* 第三方工具
+  在运行时验证类型
 
 ---
 
@@ -94,7 +97,7 @@ add('1', 1);
 
 ####  值
 
-> 字面量(literal)、变量(variable)、常量(constant)、函数形参、函数对象、`class`、`enum`......
+ 字面量(literal)、变量(variable)、常量(constant)、函数形参、函数对象、`class`、`enum`......
 
 </div>
 
@@ -102,18 +105,18 @@ add('1', 1);
 
 #### 类型
 
-> `string`, `number`, `function`, `type` 关键字定义的类型 `interface`、`class` 和 `enum`...
+ `string`, `number`, `function`, `type` 关键字定义的类型 `interface`、`class` 和 `enum`...
 
 </div>
+
+> TypeScript 3.8 引入了[`import type`](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-8.html)的语法，可以显式指明引入类型，从而杜绝值空间潜在的循环引用问题
 
 ---
 
 ### [TS类型检查的限制-类型擦除](https://zh.wikipedia.org/wiki/%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4)
 
-TS最终是会编译到JavaScript，TS的类型会被擦除 
+TS最终是会编译到JavaScript，TS的类型会被擦除
 
-
-> TypeScript 3.8 引入了[`import type`](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-8.html)的语法，可以显式指明引入类型，从而杜绝值空间潜在的循环引用问题
 
 <!-- 因此TS的类型验证能力是有限的，如果已经从TS编译到JS，然后打包运行了，是不会在程序运行的时候抛出错误的的 -->
 
@@ -152,10 +155,7 @@ const res3 = add<string>('1','2'); // typecheckerror
 
 ---
 
-
-### 类型的基本操作
-
-* 联合类型
+### 联合类型
 
 
 ```ts
@@ -181,10 +181,11 @@ const res3 = add<string>('1','2'); // typecheckerror
 
 ---
 
+###  交叉类型
+
 交叉类型是将多个类型合并为一个类型。 这让我们可以把现有的多种类型叠加到一起成为一种类型，它包含了所需的所有类型的特性。
 例如下面这个例子，这两个`Vip`  和 `Visitor`是有两个
 
-* 交叉类型
 
 ```ts {monaco}
 type ErrorHandler = {
@@ -207,8 +208,26 @@ type PersonVisitorResponse = ErrorHandler & Visitor
 
 ### 元组类型
 
+元组类型就是已知长度和所有元素类型的数组类型
 
+```ts
+type tuple = [string, number];
+```
 
+元组操作的核心是...运算和infer类型推断，...可以把元组展开用于构造新的元组，而infer允许我们从元组中分段匹配，并且获取其中各个部分
+
+```ts {monaco}
+type concat<A extends any[], B extends any[]> = [...A, ...B];
+
+type shift<Tuple extends any[]> = Tuple extends [infer fist, ... infer rest] ? rest : void;
+
+type unshift<Tuple extends any[], Type> = [Type, ...Tuple];
+
+type pop<Tuple> = Tuple extends [... infer rest, infer last] ? rest : void;
+
+type push<Tuple extends any[], Type> = [...Tuple, Type];
+
+```
 
 ---
 
@@ -226,6 +245,25 @@ type List<Type, n extends number, result extends any[] = []> =
 
 type tuple_3 = List<number, 3>; // [number, number, number]
 ```
+
+---
+
+一个典型的工具类型`Awaited`的实现也是递归的
+
+```ts {monaco}
+
+type _Awaited<T> =
+    T extends null | undefined ? T : // special case for `null | undefined` when not in `--strictNullChecks` mode
+        T extends object & { then(onfulfilled: infer F): any } ? // `await` only unwraps object types with a callable `then`. Non-object types are not unwrapped
+            F extends ((value: infer V, ...args: any) => any) ? // if the argument to `then` is callable, extracts the first argument
+                _Awaited<V> : // recursively unwrap the value
+                never : // the argument to `then` was not callable
+        T; // non-object or non-thenable
+type result = _Awaited<Promise<Promise<number>>>; // string
+```
+
+<!-- 因此我们可以用递归完成更加复杂的操作 -->
+
 
 ---
 
@@ -285,25 +323,9 @@ type FeatureOptions = OptionsFlags<FeatureFlags>;
 ```
 ---
 
-![]()
+在项目中使用
 
----
-
-一个典型的工具类型`Awaited`的实现也是递归的
-
-```ts {monaco}
-
-type _Awaited<T> =
-    T extends null | undefined ? T : // special case for `null | undefined` when not in `--strictNullChecks` mode
-        T extends object & { then(onfulfilled: infer F): any } ? // `await` only unwraps object types with a callable `then`. Non-object types are not unwrapped
-            F extends ((value: infer V, ...args: any) => any) ? // if the argument to `then` is callable, extracts the first argument
-                _Awaited<V> : // recursively unwrap the value
-                never : // the argument to `then` was not callable
-        T; // non-object or non-thenable
-type result = _Awaited<Promise<Promise<number>>>; // string
-```
-
-<!-- 因此我们可以用递归完成更加复杂的操作 -->
+<img border="rounded" src="/img/keyof.png" class="w-[50%]">
 
 ---
 
@@ -351,4 +373,4 @@ type res_10 = fib<10>
 
 * [读懂类型体操：TypeScript 类型元编程基础入门]( https://zhuanlan.zhihu.com/p/384172236 )
 * [typescript handlebook](https://www.typescriptlang.org/docs/handbook/intro.html)
-* [TypeScript类型元编程入门指南](https://juejin.cn/post/7025619077158666270)
+* [winter-TypeScript类型元编程入门指南](https://juejin.cn/post/7025619077158666270)

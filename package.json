@@ -2,9 +2,9 @@
   "name": "slides",
   "private": true,
   "scripts": {
-    "build": "slidev build typescript泛型编程.md",
-    "dev": "slidev --open typescript泛型编程.md",
-    "export": "slidev export typescript泛型编程.md"
+    "build": "slidev build GraphQl.md",
+    "dev": "slidev --open GraphQl.md",
+    "export": "slidev export GraphQl.md"
   },
   "dependencies": {
     "@slidev/cli": "^0.33.0",

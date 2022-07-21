@@ -9,11 +9,9 @@
   "dependencies": {
     "@slidev/cli": "^0.33.0",
     "@slidev/theme-default": "*",
-    "@slidev/theme-seriph": "*",
-    "superstruct": "^0.16.0"
+    "@slidev/theme-seriph": "*"
   },
   "devDependencies": {
-    "@iconify-json/logos": "^1.1.8",
-    "playwright-chromium": "^1.22.2"
+    "@iconify-json/logos": "^1.1.8"
   }
 }

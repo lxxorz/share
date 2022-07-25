@@ -35,16 +35,29 @@ monaco: true
 
 ---
 
-### 起源
+### 解决了什么问题?
 
-GraphQL 的出现源于移动端对高效加载数据的需求，这种情况下使用传统的 RESTful API 很难满足持续部署和快速迭代的需求.
-这样的想法并非只有 Facebook 独有，Netflix 开源过类似的方案 [falcor](https://github.com/Netflix/falcor)
+设想这样一个场景，当前页面需要新增卡片组件，显示员工的人名和职位，此时既有的接口包含了“所有的员工信息”
+* 使用旧的的接口，存在数据传输冗余
+* 设计新的接口， 需要和后端反复沟通，且维护的api数量越来越多
 
-<img src="/img/GraphQl/company.png" alt="test" width="500">
+```json
+{
+  "employee": [
+    {
+      "id": "1",
+      "firstName": "Tom",
+      "lastName": "Cruise",
+      "nation": "USA",
+      "Language": "English",
+      "job": "Director"
+      ...
+    },
+    ...
+  ]
+}
 
-<div class="border-t-2 mt-4 mb-4"></div>
-
-* [reference](https://www.howtographql.com/basics/0-introduction/)
+```
 
 ---
 
@@ -57,6 +70,27 @@ GraphQL 的出现源于移动端对高效加载数据的需求，这种情况下
 * 后端返回的数据存在冗余,过度数据传输
 * API数量很多
 * 后端和前端需要反复确认数据结构
+
+<div class="text-blue-500">
+
+  而使用 GraphQl 的 API 设计，我们只需要通过一个接口就能精准获取所需的信息
+
+</div>
+
+---
+
+### 起源
+
+GraphQL 的出现源于移动端对高效加载数据的需求，这种情况下使用传统的 RESTful API 很难满足持续部署和快速迭代的需求.
+这样的想法并非只有 Facebook 独有，Netflix 开源过类似的方案 [falcor](https://github.com/Netflix/falcor)
+
+<img src="/img/GraphQl/company.png" alt="test" width="500">
+
+<div class="border-t-2 mt-4 mb-4"></div>
+
+* [reference](https://www.howtographql.com/basics/0-introduction/)
+
+
 
 ---
 
@@ -93,8 +127,62 @@ person{
 
 [playground](https://countries.trevorblades.com/)
 
+
 ---
 
+三种查询操作
+
+1. query - 只读的查询操作
+2. mutation - 获取数据之后写入数据
+3. subscription - 订阅一个事件，长期接受响应
+
+---
+layout: two-cols
+---
+
+带参数查询
+
+```graphql
+{
+  user(id: 4) {
+    name
+  }
+}
+```
+
+::right::
+<div class="ml-2">
+
+结果
+
+```graphql
+{
+  "user": {
+    "name": "Mark Zuckerberg"
+  }
+}
+```
+
+</div>
+
+---
+
+---
+layout: tow-cols
+---
+
+```graphql
+mutation {
+  likeStory(storyID: 12345) {
+    story {
+      likeCount
+    }
+  }
+}
+::right::
+m 
+
+```
 
 ---
 
@@ -111,6 +199,3 @@ person{
 3. 这个事情到底由谁来做？GraphQL 的利好主要是在于前端的开发效率，但落地却需要服务端的全力配合。如果是小公司或者整个公司都是全栈，那可能可以做，但在很多前后端分工比较明确的团队里，要推动 GraphQL 还是会遇到各种协作上的阻力。这可能是没火起来的根本原因。
 
 ref: https://www.zhihu.com/question/38596306/answer/79714979
-
----
-

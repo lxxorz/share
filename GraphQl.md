@@ -63,7 +63,7 @@ monaco: true
 
 ### 优势
 
-在此之前,REST 的概念是由*Roy Fielding*在 [Representational State Transfer (REST)](https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm) 中提出,
+在此之前,我们使用的API风格被称为 RESTful , 是由*Roy Fielding*在 [Representational State Transfer (REST)](https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm) 中提出,
 
 但是 RESTful 风格的 API 设计存在如下问题
 
@@ -81,63 +81,62 @@ monaco: true
 
 ### 起源
 
-GraphQL 的出现源于移动端对高效加载数据的需求，这种情况下使用传统的 RESTful API 很难满足持续部署和快速迭代的需求.
+最开始使用 REST 的方式开发，是因为当时的客户端程序相对简单,而现在不同平台，不同框架的出现,构造的客户端程序页越来越复杂
+也需要一种高效快速的数据加载和程序开发的方式
+
+GraphQL 的出现源于移动端对高效加载数据的需求，
+
+1. 使用 REST 往往需要去修改服务器暴露给客户端的数据，这阻碍了快速开发产品
 这样的想法并非只有 Facebook 独有，Netflix 开源过类似的方案 [falcor](https://github.com/Netflix/falcor)
 
 <img src="/img/GraphQl/company.png" alt="test" width="500">
 
-<div class="border-t-2 mt-4 mb-4"></div>
-
 * [reference](https://www.howtographql.com/basics/0-introduction/)
 
-
-
+---
+layout: two-cols
 ---
 
 GraphQL 是一个用于 API 的查询语言，是一个使用基于类型系统来执行查询的服务端运行时（类型系统由你的数据定义）
 
-<img src="/img/GraphQl/layer.png" width="400">
+<!-- <img src="/img/GraphQl/layer.png" width="400"> -->
 
----
 
 
 ```mermaid
 flowchart LR;
   client ==>|type system| server ==> |data| client;
 ```
+::right::
 
-而这些所有的查询都是基于同一个api进行
 
-<div v-click>
+<div class="ml-10">
 
-```mermaid
-flowchart LR;
-  api ==> |type system| server ==> |data| api;
-  client <==> api;
-```
-
-一个典型的 GraphQl 查询语句如下
+  而这些所有的查询都是基于同一个api进行, 一个典型的 GraphQl 查询语句如下
 
 ```graphql
-person{
-  name
+query {
+  country(code: "CN") {
+    name
+  }
 }
+
 ```
-</div>
 
 [playground](https://countries.trevorblades.com/)
 
+</div>
+
 
 ---
+
 
 三种查询操作
 
-1. query - 只读的查询操作
-2. mutation - 获取数据之后写入数据
-3. subscription - 订阅一个事件，长期接受响应
+1. query - 只读查询操作
+2. mutation - 修改操作
+3. subscription - 订阅一个事件，长期接受响应,其结果随着时间改变而改变
 
----
-layout: two-cols
 ---
 
 带参数查询
@@ -151,11 +150,12 @@ layout: two-cols
 ```
 
 ::right::
+
 <div class="ml-2">
 
 结果
 
-```graphql
+```json
 {
   "user": {
     "name": "Mark Zuckerberg"
@@ -167,9 +167,31 @@ layout: two-cols
 
 ---
 
+当存在多个相同的查询参数时或者想要动态的查询，可以使用 graphql 提供的变量,从而避免在客户端生成字符串
+
+```graphql
+query getContinent($code: String = "EU") {
+  continents(code: $code) {
+    code
+    name
+  }
+}
+```
+
+
+在提交查询的时候可以把变量的定义带上，也可以提供一个默认值
+```json
+{
+  query: ...,
+  variables: {
+    "code": "AS"
+  }
+}
+```
+
 ---
-layout: tow-cols
----
+
+使用 GraphQl 修改数据
 
 ```graphql
 mutation {
@@ -179,23 +201,33 @@ mutation {
     }
   }
 }
-::right::
-m 
-
 ```
+
+---
+
+除了最常见的查询，如果想要进一步的性能提升,使用 graphql 还需要对缓存、权限管理等做进一步考虑和设置
 
 ---
 
 ### 推进 GraphQl 的使用
 
-1. 在推出 GraphQl 之时，只应用在 react的应用中
+1. 在推出 GraphQl 之时，只在 react 中使用,社区其他语言和框架对 GraphQl 缺乏支持
 
-<div class="color-cyan">
-  其他语言的`GraphQl`实现 [Language Implementations](https://graphql.org/code/)
-</div>
 
-2. GraphQL 的 field resolve 如果按照 naive 的方式来写，每一个 field 都对数据库直接跑一个 query，会产生大量冗余 query，虽然网络层面的请求数被优化了，但数据库查询可能会成为性能瓶颈，这里面有很大的优化空间，但并不是那么容易做。FB 本身没有这个问题，因为他们内部数据库这一层也是抽象掉的，写 GraphQL 接口的人不需要顾虑 query 优化的问题。
+<span class="text-blue-500">
 
-3. 这个事情到底由谁来做？GraphQL 的利好主要是在于前端的开发效率，但落地却需要服务端的全力配合。如果是小公司或者整个公司都是全栈，那可能可以做，但在很多前后端分工比较明确的团队里，要推动 GraphQL 还是会遇到各种协作上的阻力。这可能是没火起来的根本原因。
+ 现在主流语言基本上都有对应的社区框架使用 其他语言的`GraphQl`实现 [Language Implementations](https://graphql.org/code/)
+
+</span>
+
+
+2. GraphQl 每一个字段对应一个 resolver， 每个 resolver 每一次查询都要去跑一次数据库,怎么优化？
+```js
+  person: ({id}) => database.getPerson(id)
+```
+
+
+3. 这个事情到底由谁来做？GraphQL 的利好主要是在于前端的开发效率，但落地却需要服务端的全力配合。如果是小公司或者整个公司都是全栈，那可能可以做，但在很多前后端分工比较明确的团队里，要推动 GraphQL 还是会遇到各种协作上的阻力。这可能是没火起来的根本原因
+
 
 ref: https://www.zhihu.com/question/38596306/answer/79714979

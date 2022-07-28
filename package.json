@@ -12,6 +12,7 @@
     "@slidev/theme-seriph": "*"
   },
   "devDependencies": {
-    "@iconify-json/logos": "^1.1.8"
+    "@iconify-json/logos": "^1.1.8",
+    "playwright-chromium": "^1.24.1"
   }
 }

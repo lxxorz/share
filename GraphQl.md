@@ -73,7 +73,7 @@ monaco: false
 ```mermaid
 flowchart LR
   subgraph Http
-    getPerson --> getReview --> getHistory
+    getAuthor --> getPosts --> ...
   end
   subgraph GraphQL
     query
@@ -81,28 +81,22 @@ flowchart LR
   Http o--o GraphQL
 ```
 
+
+---
+
 <div class="text-blue-500">
 
   使用 GraphQL 的 API 设计，我们只需要通过一个接口就能精准获取所需的信息
 
 </div>
 
----
-
 ```graphql
-{
-  person(id: "1") {
-    firstName
-    lastName
-    job
-  },
-  review(id: "1") {
-    rating
-    comment
-  },
-  history(id: "1") {
-    date
-    comment
+query {
+  author{
+    name
+  }
+  posts {
+    title
   }
 }
 ```
@@ -130,7 +124,7 @@ flowchart LR;
 
 ```graphql
 query {
-  country(code: "CN") {
+  continents(code: "AS") {
     name
   }
 }
@@ -159,7 +153,7 @@ query {
 
 ```graphql
 {
-  user(id: 4) {
+  person(id: 2) {
     name
   }
 }
@@ -172,7 +166,7 @@ query {
 
 ```json
 {
-  "user": {
+  "person": {
     "name": "Mark Zuckerberg"
   }
 }
@@ -214,9 +208,9 @@ query getContinent($code: String = "EU") {
 
 ```graphql
 mutation {
-  likeStory(storyID: 12345) {
-    story {
-      likeCount
+  setContinentName(name: "ASSSSSSSSSia") {
+    continent {
+      name
     }
   }
 }
@@ -232,7 +226,48 @@ mutation {
 
 ---
 
-除了最常见的查询，如果想要进一步的性能提升,使用 GraphQL 还需要对缓存、权限管理等做进一步考虑和设置
+除了最常见的查询，如果想要进一步的性能提升,使用 GraphQL 还需要对缓存、权限管理等做进一步考虑和设置,以及需要避免一些恶意查询
+
+<div class="flex flex-row">
+
+<div class="flex-1">
+
+```mermaid
+flowchart TB
+  subgraph Author
+    name
+    posts
+  end
+
+  subgraph Post
+    title
+    author
+  end
+
+  author --> Author
+  posts --> Post
+```
+</div>
+
+<div class="flex-1">
+
+  ```graphql
+  {
+    author{
+      posts{
+        author{
+          posts{
+            ...
+          }
+        }
+      }
+    }
+  }
+  ```
+</div>
+
+</div>
+
 
 ---
 

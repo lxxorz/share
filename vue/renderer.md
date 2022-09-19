@@ -63,7 +63,7 @@ function render(vnode, container) {
 
 #### 自定义渲染器
 
-上述所有代码都只能将 vnode 渲染到浏览器真实的 DOM 中，那么怎么设计一个更为通用的渲染函数呢，从而摆脱浏览器的限制，不依赖于具体的浏览器 API。Vue 的做法是将那些用到的特定 API 抽离出来，提供可以配置这些 API 的接口这里可以参考 vue 文档中，**自定义渲染器函数**部分
+上述所有代码都只能将 vnode 渲染到浏览器真实的 DOM 中，那么怎么设计一个更为通用的渲染函数呢，从而摆脱浏览器的限制，不依赖于具体的浏览器 API。Vue 的做法是将那些用到的特定 API 抽离出来，提供可以配置这些 API 的接口这里可以参考 vue 文档中，[**自定义渲染器函数**](https://vuejs.org/api/custom-renderer.html)部分，vue 在[@vue/rumtime-dom](https://github.com/vuejs/core/tree/8772a01a9280b1591e781e20741d32e2f9a836c8/packages/runtime-dom)中也是实现了 DOM 的[渲染 API](https://github.com/vuejs/core/blob/8772a01a9280b1591e781e20741d32e2f9a836c8/packages/runtime-dom/src/nodeOps.ts)
 
 那么，渲染函数会用到那些特定的 API 呢？需要从一个简单的例子看起
 
@@ -120,14 +120,22 @@ function mountElement (vnode, container) {
 
 这里补充了 patch 的实现，可以看到当旧结点没有的时候，patch 会执行挂载操作，分析一下可知，这里的挂载函数 `mountElement` 会用到浏览器`document.createElement`，而设置文本子节点会用到 Element.textContent，最用调用`appendChild`将新建的元素添加到容器元素中，这些操作大量的依赖了浏览器的 API，因此可以作为配置项提供给用户，从而保证渲染函数的通用性
 
+对应的，可以把这些操作封装成函数，作为配置项
+
+* `document.createElement`封装成`createElement(node_type)`函数
+* 设置`el.textContent`封装成`setElementText(el, text)`函数
+* ...
+
+
+然后将配置项 `options` 作为参数传递给生成渲染器的函数
+
 ```js
-// options 用于自定义渲染器
 const renderer = createRenderer(options);
 ```
 
 #### 挂载和更新
 
-之前的例子只谈到了 vnode.children 是字符串的情况，除了这种情况，vnode.children 还可能是数组
+之前的例子只谈到了 vnode.children 是字符串的情况，除了这种情况，vnode.children 还可能是数组，其中包含其他 vnode 节点，这样的树形结构就构成了虚拟的 DOM 树
 ```js
 const vnode = {
   type: "p",
@@ -140,29 +148,58 @@ const vnode = {
 }
 ```
 
-这种情况就需要再挂载的时候判断一下 vnode.children 是否为数组，如果是数组则进行递归挂载
+为了处理 vnode.children 是 vnode 节点的情况，就需要在挂载的时候判断 vnode.children 是否为数组，如果是数组则进行递归挂载，实现如下
+
 ```js
 function createRender () {
   function mountElement (vnode, container) {
-    const elemnet = createElement(vnode.type);
+    const element = createElement(vnode.type);
     // 文本子节点
     if(typeof vnode.children === "string") {
-      element.textContent = vnode.children;
+      setElementText(element, vnode.children);
     } else if(Array.isArray(vnode.children)) {
       patch(null, child, element);
     }
     insert(element, container);
   }
 }
+```
+注意这里的 patch 传递的值为`null`，这是因为挂载节点之前没有旧的 vnode
 
+
+#### 设置节点属性
+
+目前为止，只进行了生成 DOM 元素和设置 DOM 元素文本操作，而 vnode 上的属性没有进行设置，在设置属性之前，有必要了解一下 HTML attributes 和 DOM properties 之前的区别
+
+理想情况下 DOM 和 HTML 标签的属性应该是一一对应的，每一个 html 标签上的 attribute 都应该和 DOM 上的 property 相同，如果标签`<input id="foo">`那么`el.id`应该也是`'foo'` 也就是说在DOM和标签上的属性名以及属性值值都必须一样
+
+但是还是在以下几种情况还是会存在 DOM 和 html 属性不一致的情况
+
+* 属性名不一致，在标签上的属性，不一定在DOM里面有，在DOM里面的属性，在标签上不一定有,比如在标签上存在 `aria-*`的属性，但是在 DOM 没有,在DOM对应中存在的属性 `textContent` 在HTML中没有
+
+* 值不一致，设置在 HTML attribute 上的值，是作为 DOM properties 的初始值，通过`getAttribute(attributeName)`拿到的是初始值
+
+
+```js
+el.getAttribute("value"); // ""
+el.value // "hello"
 ```
 
-目前为止，只进行了生成 DOM 元素和设置 DOM 元素文本操作，而 vnode 上的所有属性没有进行设置，在设置属性之前，有必要了解一下 HTML attributes 和 DOM properties 之前的区别
+2. 设置在 HTML attribute 和 Dom property 属性并不是一一对应
 
-1. 设置在 HTML attribute 上的值，是作为 DOM properties 的初始值
-2. 存在 DOM properties 不一定存在对应的 HTML attributes 例如能够设置 textContent 但是没有对应的 html attributes
-3. 
+```js
+el.textContent
+```
+比如 `textContent`这个属性，在 html 标签上并没有与之对应的属性
+同样 html 上的元素也不一定有对应的 DOM property
 
-像类似这种的标签，在 vue 组件中需要 vue 进行
-关于 DOM properties 和 HTML attributes
+基于以上原因，在设置 DOM property 时需要针对各种特殊情况进行处理，正常情况就使用 setAttribute 设置属性
 
+但是使用 setAttribute 也会存在问题
+```js
+el.setAttribute("disabled", false)
+el.disabled // true
+```
+这里使用 setAttribute 设置了 el.disabled 的值为 false，但是反直觉的是：并没有将 disabled 设置为 false，反而将 el.disabled 的值设置为 true，这是因为 disabled 本身是个 boolean 类型的变量，setAttribute 时，false 会被转换为 `'false'`,然后转换为 boolean
+
+因此对于这种 boolean 类型的变量也要做处理

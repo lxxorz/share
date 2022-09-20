@@ -29,10 +29,11 @@ effect({
 
 这就是渲染器和响应式系统的结合使用，但是通常渲染器不会这么简单，vue 中由专门的生成渲染器的函数 `createRenderer`
 在讨论渲染器函数之前，首先需要明确两个概念
+
 1. mount 也就是挂载，将虚拟 DOM 节点挂载到真实的 DOM 元素上
 2. patch 也就是打补丁，比较新的节点和旧的结点，并且更新变更的地方
 
-
+mount 和 patch 之间的唯一区别在于，挂载的时候没有旧的节点需要被卸载
 
 ```js
 function render(vnode, container) {
@@ -171,21 +172,19 @@ function createRender () {
 
 目前为止，只进行了生成 DOM 元素和设置 DOM 元素文本操作，而 vnode 上的属性没有进行设置，在设置属性之前，有必要了解一下 HTML attributes 和 DOM properties 之前的区别
 
-理想情况下 DOM 和 HTML 标签的属性应该是一一对应的，每一个 html 标签上的 attribute 都应该和 DOM 上的 property 相同，如果标签`<input id="foo">`那么`el.id`应该也是`'foo'` 也就是说在DOM和标签上的属性名以及属性值值都必须一样
+理想情况下 DOM 和 HTML 标签的属性应该是一一对应的，每一个 html 标签上的 attribute 都应该和 DOM 上的 property 相同，如果标签`<input id="foo">`那么`el.id`应该也是`'foo'` 也就是说在 DOM 和标签上的属性名以及属性值值都必须一样
 
 但是还是在以下几种情况还是会存在 DOM 和 html 属性不一致的情况
 
-* 属性名不一致，在标签上的属性，不一定在DOM里面有，在DOM里面的属性，在标签上不一定有,比如在标签上存在 `aria-*`的属性，但是在 DOM 没有,在DOM对应中存在的属性 `textContent` 在HTML中没有
+* 属性名不一致，在标签上的属性，不一定在 DOM 里面有，在 DOM 里面的属性，在标签上不一定有，比如在标签上存在 `aria-*`的属性，但是在 DOM 没有，在 DOM 对应中存在的属性 `textContent` 在 HTML 中没有
 
-* 值不一致，设置在 HTML attribute 上的值，是作为 DOM properties 的初始值，通过`getAttribute(attributeName)`拿到的是初始值
+* 值不一致，设置在 HTML attribute 上的值，是作为 DOM properties 的初始值，通过`getAttribute(attributeName)`拿到的是初始值，另外通过 setAttribute 设置设置属性时对于`boolean`值也有点不同
 
 
 ```js
 el.getAttribute("value"); // ""
 el.value // "hello"
 ```
-
-2. 设置在 HTML attribute 和 Dom property 属性并不是一一对应
 
 ```js
 el.textContent
@@ -203,3 +202,30 @@ el.disabled // true
 这里使用 setAttribute 设置了 el.disabled 的值为 false，但是反直觉的是：并没有将 disabled 设置为 false，反而将 el.disabled 的值设置为 true，这是因为 disabled 本身是个 boolean 类型的变量，setAttribute 时，false 会被转换为 `'false'`,然后转换为 boolean
 
 因此对于这种 boolean 类型的变量也要做处理
+
+```js
+function mountElement(vnode, container) {
+ const el = createElement(vnode.type)
+ // 省略 children 的处理
+
+ if (vnode.props) {
+  for (const key in vnode.props) {
+    const value = vnode.props[key]
+    // 使用 shouldSetAsProps 函数判断是否应该作为 DOM Properties
+
+    if (shouldSetAsProps(el, key, value)) {
+      const type = typeof el[key]
+      if (type === 'boolean' && value === '') {
+        el[key] = true
+      } else {
+        el[key] = value
+      }
+    } else {
+      el.setAttribute(key, value)
+    }
+  }
+ }
+
+ insert(el, container)
+}
+```

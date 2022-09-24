@@ -178,27 +178,17 @@ function createRender () {
 
 * 属性名不一致，在标签上的属性，不一定在 DOM 里面有，在 DOM 里面的属性，在标签上不一定有，比如在标签上存在 `aria-*`的属性，但是在 DOM 没有，在 DOM 对应中存在的属性 `textContent` 在 HTML 中没有
 
-* 值不一致，设置在 HTML attribute 上的值，是作为 DOM properties 的初始值，通过`getAttribute(attributeName)`拿到的是初始值，另外通过 setAttribute 设置设置属性时对于`boolean`值也有点不同
+* 值不一致，设置在 HTML attribute 上的值，是作为 DOM properties 的初始值，通过`getAttribute(attributeName)`拿到的是初始值，另外通过 setAttribute 设置设置属性时对于`boolean`值也有预期的结果不一样
 
 
 ```js
 el.getAttribute("value"); // ""
 el.value // "hello"
-```
 
-```js
-el.textContent
-```
-比如 `textContent`这个属性，在 html 标签上并没有与之对应的属性
-同样 html 上的元素也不一定有对应的 DOM property
-
-基于以上原因，在设置 DOM property 时需要针对各种特殊情况进行处理，正常情况就使用 setAttribute 设置属性
-
-但是使用 setAttribute 也会存在问题
-```js
-el.setAttribute("disabled", false)
+el.setAttribute("disabled", false); // true
 el.disabled // true
 ```
+
 这里使用 setAttribute 设置了 el.disabled 的值为 false，但是反直觉的是：并没有将 disabled 设置为 false，反而将 el.disabled 的值设置为 true，这是因为 disabled 本身是个 boolean 类型的变量，setAttribute 时，false 会被转换为 `'false'`,然后转换为 boolean
 
 因此对于这种 boolean 类型的变量也要做处理
@@ -212,7 +202,6 @@ function mountElement(vnode, container) {
   for (const key in vnode.props) {
     const value = vnode.props[key]
     // 使用 shouldSetAsProps 函数判断是否应该作为 DOM Properties
-
     if (shouldSetAsProps(el, key, value)) {
       const type = typeof el[key]
       if (type === 'boolean' && value === '') {
@@ -226,6 +215,36 @@ function mountElement(vnode, container) {
   }
  }
 
- insert(el, container)
+  insert(el, container)
 }
+
+
+function shouldSetAsProps(el, key, value) {
+  if(key === "form" && el.tagName === "INPUT")
+    return false;
+  return key in el;
+}
+
 ```
+这里处理的思路是优先设置 DOM property,
+
+这里也需要把属性的设置变成平台无关，作为配置项传递给`createRenderer()`
+```js
+createRenderer({
+  patchProps(el, key, value) {
+    // 使用 shouldSetAsProps 函数判断是否应该作为 DOM Properties
+    if (shouldSetAsProps(el, key, value)) {
+      const type = typeof el[key]
+      if (type === 'boolean' && value === '') {
+        el[key] = true
+      } else {
+        el[key] = value
+      }
+    } else {
+      el.setAttribute(key, value)
+    }
+  }
+})
+```
+
+以上保证了正确设置vnode.props,但除此以外对于class，event等特殊props还要做处理

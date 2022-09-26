@@ -21,8 +21,8 @@ renderer(`<div>${text}</div`, document.getElementById("app"));
 然后会跟踪收集依赖，当响应式变量变化时重新执行渲染函数
 
 ```js
-const text = "hello";
-effect({
+const text = ref("hello");
+effect(() => {
   renderer(`<div>${text}</div`, document.getElementById("app"));
 })
 ```
@@ -248,3 +248,131 @@ createRenderer({
 ```
 
 以上保证了正确设置vnode.props,但除此以外对于class，event等特殊props还要做处理
+
+在vue当中对于标签或者自定义组件上的class属性而言，一般有两种形式
+```html
+<input class="foo" />
+```
+或者绑定一个对象
+```html
+<input :class="{foo: true}">
+```
+因此，在将vnode渲染到DOM中时，需要对class做统一化处理
+vue从模板中生成的代码可以看到，`_normalizeClass`就是这个处理的函数
+```js
+const _hoisted_1 = /*#__PURE__*/_createElementVNode("div", {
+  class: /*#__PURE__*/_normalizeClass({foo: true})
+}, "foo", -1 /* HOISTED */)
+```
+
+除了class需要提前处理之外，在vue中，事件也是一个特殊的属性，怎么才能把事件添加到DOM上呢？在vnode中，约定以**on**开头的属性视作事件，
+
+```js
+const vnode = {
+  props: {
+    onClick: () => {alert("click")}
+  }
+}
+```
+在patchProps设置DOM属性时，调用addEventListener绑定事件即可
+```js
+function createRenderer() {
+  function patchProps(el,key,preValue, nextValue, container) {
+    if(/^on/.test(key)) {
+      const name = key.slice(2).toLowerCase();
+      // 绑定事件
+      el.addEventListener(name, nextValue);
+    }else if(key == "class") {
+      //...
+    }else if(shouldSetAsProps(el, key, nextValue)) {
+      //...
+    }
+  }
+}
+```
+既然设置了事件，那么我们如何更新绑定的事件呢,简单的做法就是移除之前的事件监听器，然后绑定新的事件侦听器
+
+```js
+function createRenderer() {
+  function patchProps(el,key,preValue, nextValue, container) {
+    if(/^on/.test(key)) {
+      const name = key.slice(2).toLowerCase();
+      // 移除之前的事件
+      preValue && el.removeEventListener(name, preValue);
+      // 绑定事件
+      nextValue && el.addEventListener(name, nextValue);
+    }else if(key == "class") {
+      //...
+    }else if(shouldSetAsProps(el, key, nextValue)) {
+      //...
+    }
+  }
+}
+```
+
+这当然是起作用的，然而vue的做法，更加高效!
+vue将事件侦听器包装了一下，每次调用invoker函数作为事件侦听器，在这个函数当中实际执行的是用户传递过来的函数，因此不需要再去removeEventListener
+```js
+function createRenderer() {
+  function patchProps(el, key, preValue, nextValue) {
+    if(/^on/.test(key)) {
+      const invoker = el._vei;
+      if(nextValue) {
+        // 新事件存在
+        if(!invoker) {
+          invoker = el._vei = (event) => {
+            invoker.value(event);
+          }
+          // 绑定事件
+          el.addEventListener(name, invoker);
+        }
+        // 更新事件侦听器
+        invoker.value = nextValue;
+      } else if(invoker) {
+        // 没有事件 且之前有事件，需要移除之前的事件
+        el.removeEventListener(name, invoker);
+        invoker = el._vei = nextValue;
+      }
+    } else if (key === "class") {
+      // ...
+    } else if (shouldSetProps(key)) {
+      // ...
+    }
+  }
+}
+```
+可以看到这里在事件更新的时候避免了`removeEventListener`,但是上面的代码也存在一个问题
+可以看到上面的代码每次获取invoker都是从el._vei如果有多个事件,每次更新事件的时候el._vei到底是哪个事件的呢？这里就需要重新设计一下el._vei的数据结构，每次从el._vei当中取出来事件时，根据事件名取出对应的invoker
+```js
+function patchProps(el, key, preValue, nextValue) {
+  if(/^on/.test(key)) {
+    if(/^on/.test(key)) {
+      const invoker = el.vei || (el._vei = {});
+      const invoker = invokers[key];
+      if(nextValue) {
+        // 新事件存在
+        if(!invoker) {
+          invoker = el._vel[key] = (e) => {
+            if(Array.isArray(invoker)) {
+              invoker.value.forEach(fn => fn(e));
+            }else {
+              invoker.value();
+            }
+          }
+          // 绑定事件
+          el.addEventListener(name, invoker);
+        }
+        // 更新事件侦听器
+        invoker.value = nextValue;
+      } else if(invoker) {
+        // 没有事件 且之前有事件，需要移除之前的事件
+        el.removeEventListener(name, invoker);
+        invoker = el._vei = nextValue;
+      }
+    } else if (key === "class") {
+      // ...
+    } else if (shouldSetProps(key)) {
+      // ...
+    }
+  }
+这样还是有点问题，每种类型的事件只能绑定

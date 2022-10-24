@@ -167,11 +167,18 @@ const processComponent = (
 ```ts
  // create reactive effect for rendering
  const effect = (instance.effect = new ReactiveEffect(
-   componentUpdateFn,
+   componentUpdateFn,g
    () => queueJob(update),
    instance.scope // track it in component's effect scope
  ))
 ```
 这里把组件更新的函数注册为一个响应式的副作用函数，当组件的状态发生变化时，将会重新执行`componentUpdateFn`，更新组件
 
+我们需要多次修改响应式变量时，渲染函数将会立马执行多次，这是没有必要的性能开销，
+这里的`queueJob`将渲染的任务放在微任务队列之中， 就是为了控制页面渲染更新的时机，
 
+```ts
+// scheduler.ts
+currentFlushPromise = resolvedPromise.then(flushJobs)
+```
+g

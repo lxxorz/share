@@ -5,5 +5,7 @@
     "shiki",
     "Slidev",
     "windi"
-  ]
+  ],
+  "workbench.colorCustomizations": {},
+  "commentTranslate.hover.enabled": false
 }

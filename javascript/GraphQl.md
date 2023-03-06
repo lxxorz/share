@@ -1,5 +1,5 @@
 ---
-# try also 'default' to start simple
+# try also 'default' to start fmple
 theme: seriph
 # random image from a curated Unsplash collection by Anthony
 # like them? see https://unsplash.com/collections/94734566/slidev

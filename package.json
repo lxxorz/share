@@ -2,12 +2,12 @@
   "name": "slides",
   "private": true,
   "scripts": {
-    "build": "slidev build GraphQl.md",
-    "dev": "slidev --open GraphQl.md",
-    "export": "slidev export GraphQl.md"
+    "build": "slidev build slides.md",
+    "dev": "slidev --open --remote slides.md",
+    "export": "slidev export slides.md"
   },
   "dependencies": {
-    "@slidev/cli": "^0.33.0",
+    "@slidev/cli": "~0.40.0",
     "@slidev/theme-default": "*",
     "@slidev/theme-seriph": "*"
   },
